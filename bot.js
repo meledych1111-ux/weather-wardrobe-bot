@@ -12,9 +12,11 @@ const messageHandler = new MessageHandler(bot, commandHandler);
 console.log('🤖 Бот запущен...');
 
 // Предзагрузка английских фраз
-englishService.loadPhrases().then(() => {
-  console.log('✅ Английские фразы готовы');
-}).catch(console.error);
+setTimeout(() => {
+  englishService.loadPhrases().then(() => {
+    console.log('✅ Английские фразы готовы');
+  }).catch(console.error);
+}, 2000);
 
 // Обработчики команд
 bot.onText(/\/start/, (msg) => commandHandler.handleStart(msg));
