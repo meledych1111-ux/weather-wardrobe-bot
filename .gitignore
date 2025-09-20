@@ -17,3 +17,19 @@ docker-compose.override.yml
 config/*.json    # если ключи в папке config
 telegram*.json
 bot*.json
+# Файлы с реальными ключами (НЕ коммитить)
+.env
+.env.local
+.env.production
+*.env
+
+# Файлы с ключами в любых папках
+config/keys.js
+config/keys.json
+config/credentials.js
+*/keys.*
+*/credentials.*
+
+# Специфичные файлы для вашего проекта
+telegram-bot-token.*
+weather-api-key.*
