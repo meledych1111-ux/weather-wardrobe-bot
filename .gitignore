@@ -32,4 +32,8 @@ config/credentials.js
 
 # Специфичные файлы для вашего проекта
 telegram-bot-token.*
+<<<<<<< HEAD
 weather-api-key.*
+=======
+weather-api-key.*
+>>>>>>> 9c3d7a1c70b0f8550afc0c8ff0b8b87cafe3cc45
