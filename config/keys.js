@@ -1,7 +1,5 @@
-require('dotenv').config();
-
 module.exports = {
-  telegramToken: process.env.TELEGRAM_TOKEN,
-  weatherApiKey: process.env.WEATHER_API_KEY,
-  rssFeedUrl: process.env.RSS_FEED_URL || 'https://wordsmith.org/awad/rss1.xml'
+  TELEGRAM_TOKEN: '8303779371:AAHRAILSeWbOh5iLwbe_Y-ff4jwOtKXK0KQ',
+  WEATHER_API_KEY: 'ye2a75f711fd55120d41b945a8faaf7ad',
+  RSS_FEED_URL: 'https://wordsmith.org/awad/rss1.xml'
 };

@@ -6,128 +6,116 @@ const preferenceService = require('../services/preferenceService');
 class CommandHandler {
   constructor(bot) {
     this.bot = bot;
+    this.setupCommands();
   }
 
-  handleStart(message) {
-    const chatId = message.chat.id;
-    const welcomeText = `👋 Привет, ${message.from.first_name}!
-
-Я твой персональный помощник по стилю и погоде! Вот что я умею:
-
-🌤️  /weather - Погода и советы по одежде
-📚  /english - 5 английских фраз на сегодня
-😂  /joke - Случайная шутка
-❤️  /preferences - Мои предпочтения
-ℹ️   /help - Помощь по командам
-
-Просто напиши название города, и я расскажу о погоде и подскажу что надеть!`;
-
-    this.bot.sendMessage(chatId, welcomeText);
+  setupCommands() {
+    this.bot.onText(/\/start/, (msg) => this.handleStart(msg));
+    this.bot.onText(/\/weather (.+)/, (msg, match) => this.handleWeather(msg, match));
+    this.bot.onText(/\/english/, (msg) => this.handleEnglish(msg));
+    this.bot.onText(/\/joke/, (msg) => this.handleJoke(msg));
+    this.bot.onText(/\/preferences/, (msg) => this.handlePreferences(msg));
+    this.bot.onText(/\/help/, (msg) => this.handleHelp(msg));
   }
 
-  async handleWeather(message, city = null) {
-    const chatId = message.chat.id;
-    
-    if (!city) {
-      this.bot.sendMessage(chatId, 'Напиши название города после команды, например: /weather Москва');
-      return;
-    }
+  async handleStart(msg) {
+    const chatId = msg.chat.id;
+    const welcomeMessage = `👋 Привет, ${msg.from.first_name}!
 
-    try {
-      this.bot.sendMessage(chatId, '🌤️ Запрашиваю погоду...');
-      
-      const weather = await weatherService.getWeather(city);
-      await preferenceService.addCityPreference(chatId, city);
+Я твой умный помощник для:
+🌤️ Погоды и советов по одежде
+📚 Изучения английского
+😄 Развлечения с шутками
 
-      const response = `🌍 Погода в ${weather.city}:
-🌡️ Температура: ${weather.temp}°C (ощущается как ${weather.feelsLike}°C)
-💨 Ветер: ${weather.windSpeed} м/с
-💧 Влажность: ${weather.humidity}%
-📝 Описание: ${weather.description}
-
-👔 Совет по одежде: ${weather.advice}`;
-
-      this.bot.sendMessage(chatId, response);
-    } catch (error) {
-      this.bot.sendMessage(chatId, error.message);
-    }
-  }
-
-  async handleEnglish(message) {
-    const chatId = message.chat.id;
-    
-    try {
-      const phrases = await englishService.getDailyPhrases();
-      let response = '🌟 *5 английских фраз на сегодня с переводами:*\n\n';
-
-      phrases.forEach((phrase, index) => {
-        response += englishService.formatPhrase(phrase, index);
-        response += '\n';
-      });
-
-      response += '\n💡 *Совет:* Попробуйте использовать эти фразы сегодня в разговоре!';
-
-      this.bot.sendMessage(chatId, response, { 
-        parse_mode: 'Markdown',
-        disable_web_page_preview: true
-      });
-    } catch (error) {
-      console.error('English command error:', error);
-      this.bot.sendMessage(chatId, '❌ Не удалось загрузить фразы. Попробуйте позже.');
-    }
-  }
-
-  async handleJoke(message) {
-    const chatId = message.chat.id;
-    
-    try {
-      const joke = await jokeService.getRandomJoke();
-      this.bot.sendMessage(chatId, `😂 Шутка дня:\n\n${joke}`);
-    } catch (error) {
-      this.bot.sendMessage(chatId, 'Шутки кончились! Попробуйте позже 😄');
-    }
-  }
-
-  async handlePreferences(message) {
-    const chatId = message.chat.id;
-    const prefs = preferenceService.getUserPreferences(chatId);
-
-    let response = '❤️ Ваши предпочтения:\n\n';
-
-    if (prefs.preferredCities.length > 0) {
-      response += '🏙️ Часто ищете погоду в:\n';
-      prefs.preferredCities.forEach(city => {
-        response += `   - ${city}\n`;
-      });
-      response += '\n';
-    }
-
-    if (prefs.clothingPreferences.length > 0) {
-      response += '👔 История ваших выборов одежды:\n';
-      prefs.clothingPreferences.slice(-5).forEach((pref, index) => {
-        response += `   ${index + 1}. При ${pref.temperature}°C: ${pref.clothing}\n`;
-      });
-    } else {
-      response += 'У вас пока нет сохраненных предпочтений одежды. Я буду запоминать ваши выборы!';
-    }
-
-    this.bot.sendMessage(chatId, response);
-  }
-
-  handleHelp(message) {
-    const chatId = message.chat.id;
-    const helpText = `ℹ️ Доступные команды:
-
-/start - Начать работу
-/weather [город] - Погода и советы по одежде
-/english - 5 английских фраз на сегодня
+Доступные команды:
+/weather [город] - Погода и советы
+/english - 5 английских фраз
 /joke - Случайная шутка
 /preferences - Мои предпочтения
+/help - Помощь
+
+Просто напиши мне название города для погоды!`;
+
+    await this.bot.sendMessage(chatId, welcomeMessage);
+  }
+
+  async handleWeather(msg, match) {
+    const chatId = msg.chat.id;
+    const city = match[1];
+
+    try {
+      const weather = await weatherService.getWeather(city);
+      const recommendation = await preferenceService.getRecommendedOutfit(chatId, weather);
+
+      const message = `🌤️ Погода в ${weather.city}:
+Температура: ${weather.temperature}°C
+Описание: ${weather.description}
+
+👕 Совет по одежде:
+${recommendation}
+
+💡 Сохранить этот выбор? Ответь "нравится" или "не нравится"`;
+
+      await this.bot.sendMessage(chatId, message);
+      
+      await preferenceService.saveUserPreference(chatId, { 
+        location: city,
+        clothingPreference: {
+          temperature: weather.temperature,
+          outfit: recommendation,
+          weather: weather.description
+        }
+      });
+
+    } catch (error) {
+      await this.bot.sendMessage(chatId, '❌ Не удалось получить погоду. Проверь название города.');
+    }
+  }
+
+  async handleEnglish(msg) {
+    const chatId = msg.chat.id;
+    const phrases = englishService.getDailyPhrases();
+
+    let message = '📚 5 английских фраз на сегодня:\n\n';
+    phrases.forEach((phrase, index) => {
+      message += `${index + 1}. **${phrase.word}**\n   - ${phrase.meaning}\n\n`;
+    });
+
+    await this.bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+  }
+
+  async handleJoke(msg) {
+    const chatId = msg.chat.id;
+    const joke = await jokeService.getRandomJoke();
+
+    await this.bot.sendMessage(chatId, `😄 ${joke}`);
+  }
+
+  async handlePreferences(msg) {
+    const chatId = msg.chat.id;
+    const prefs = preferenceService.getUserPreferences(chatId);
+
+    let message = '⭐ Твои предпочтения:\n\n';
+    message += `📍 Местоположение: ${prefs.location || 'Не указано'}\n\n`;
+    message += `❤️ Сохраненных выборов: ${prefs.clothingPreferences.length}\n`;
+    message += `👍 Понравившихся outfit'ов: ${prefs.likedOutfits.length}`;
+
+    await this.bot.sendMessage(chatId, message);
+  }
+
+  async handleHelp(msg) {
+    const chatId = msg.chat.id;
+    const helpMessage = `ℹ️ Доступные команды:
+
+/weather [город] - Узнать погоду и получить совет по одежде
+/english - Получить 5 английских фраз на сегодня
+/joke - Случайная шутка
+/preferences - Посмотреть свои предпочтения
 /help - Эта справка
 
-💡 Просто напишите название города, и я автоматически покажу погоду!`;
+Просто напиши название города для быстрого доступа к погоде!`;
 
-    this.bot.sendMessage(chatId, helpText);
+    await this.bot.sendMessage(chatId, helpMessage);
   }
 }
 

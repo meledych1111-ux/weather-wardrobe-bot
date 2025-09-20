@@ -1,42 +1,39 @@
-const weatherService = require('../services/weatherService');
 const preferenceService = require('../services/preferenceService');
 
 class MessageHandler {
-  constructor(bot, commandHandler) {
+  constructor(bot) {
     this.bot = bot;
-    this.commandHandler = commandHandler;
+    this.setupMessageHandling();
   }
 
-  async handleMessage(message) {
-    const chatId = message.chat.id;
-    const text = message.text.trim();
+  setupMessageHandling() {
+    this.bot.on('message', (msg) => this.handleMessage(msg));
+  }
 
-    // Если сообщение похоже на город
-    if (/^[a-zA-Zа-яА-ЯёЁ\s]+$/.test(text) && text.length > 1 && text.length < 50) {
-      await this.handleCityMessage(message, text);
+  async handleMessage(msg) {
+    if (msg.text && !msg.text.startsWith('/')) {
+      await this.handleTextMessage(msg);
     }
   }
 
-  async handleCityMessage(message, city) {
-    const chatId = message.chat.id;
-    
-    try {
-      this.bot.sendMessage(chatId, `🌤️ Ищу погоду для ${city}...`);
-      
-      const weather = await weatherService.getWeather(city);
-      await preferenceService.addCityPreference(chatId, city);
+  async handleTextMessage(msg) {
+    const chatId = msg.chat.id;
+    const text = msg.text.toLowerCase();
 
-      const response = `🌍 Погода в ${weather.city}:
-🌡️ Температура: ${weather.temp}°C (ощущается как ${weather.feelsLike}°C)
-💨 Ветер: ${weather.windSpeed} м/с
-💧 Влажность: ${weather.humidity}%
-📝 Описание: ${weather.description}
-
-👔 Совет по одежде: ${weather.advice}`;
-
-      this.bot.sendMessage(chatId, response);
-    } catch (error) {
-      this.bot.sendMessage(chatId, `Не удалось найти погоду для "${city}". Попробуйте другой город.`);
+    if (text.includes('нравится') || text.includes('like')) {
+      const prefs = preferenceService.getUserPreferences(chatId);
+      if (prefs.clothingPreferences.length > 0) {
+        const lastPreference = prefs.clothingPreferences[prefs.clothingPreferences.length - 1];
+        await preferenceService.saveUserPreference(chatId, {
+          likedOutfit: lastPreference.outfit
+        });
+        await this.bot.sendMessage(chatId, '✅ Отлично! Сохранил твой выбор в понравившиеся!');
+      }
+    } else if (text.includes('не нравится') || text.includes('dislike')) {
+      await this.bot.sendMessage(chatId, '👌 Понял, учту в будущих рекомендациях!');
+    } else if (text.length > 2) {
+      await this.bot.sendMessage(chatId, `🌤️ Ищу погоду для: ${msg.text}...`);
+      this.bot.emit('text', { ...msg, text: `/weather ${msg.text}` });
     }
   }
 }

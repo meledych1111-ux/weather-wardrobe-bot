@@ -1,42 +1,31 @@
 const TelegramBot = require('node-telegram-bot-api');
-const { telegramToken } = require('./config/keys');
+const cron = require('node-cron');
+const { TELEGRAM_TOKEN } = require('./config/keys');
 const CommandHandler = require('./handlers/commandHandler');
 const MessageHandler = require('./handlers/messageHandler');
 const englishService = require('./services/englishService');
 
-// Инициализация бота
-const bot = new TelegramBot(telegramToken, { polling: true });
-const commandHandler = new CommandHandler(bot);
-const messageHandler = new MessageHandler(bot, commandHandler);
+console.log('🚀 Starting Weather Wardrobe Bot...');
 
-console.log('🤖 Бот запущен...');
-
-// Предзагрузка английских фраз
-setTimeout(() => {
-  englishService.loadPhrases().then(() => {
-    console.log('✅ Английские фразы готовы');
-  }).catch(console.error);
-}, 2000);
-
-// Обработчики команд
-bot.onText(/\/start/, (msg) => commandHandler.handleStart(msg));
-bot.onText(/\/weather(?:\s+(.+))?/, (msg, match) => commandHandler.handleWeather(msg, match[1]));
-bot.onText(/\/english/, (msg) => commandHandler.handleEnglish(msg));
-bot.onText(/\/joke/, (msg) => commandHandler.handleJoke(msg));
-bot.onText(/\/preferences/, (msg) => commandHandler.handlePreferences(msg));
-bot.onText(/\/help/, (msg) => commandHandler.handleHelp(msg));
-
-// Обработка обычных сообщений
-bot.on('message', (msg) => {
-  if (!msg.text || msg.text.startsWith('/')) return;
-  messageHandler.handleMessage(msg);
+const bot = new TelegramBot(TELEGRAM_TOKEN, { 
+  polling: true,
+  onlyFirstMatch: true
 });
 
-// Обработка ошибок
+new CommandHandler(bot);
+new MessageHandler(bot);
+
+cron.schedule('0 9 * * *', async () => {
+  console.log('📚 Loading daily English phrases...');
+  await englishService.loadDailyPhrases();
+});
+
 bot.on('error', (error) => {
-  console.error('Ошибка бота:', error);
+  console.error('❌ Bot error:', error);
 });
 
 process.on('unhandledRejection', (error) => {
-  console.error('Unhandled Rejection:', error);
+  console.error('⚠️ Unhandled Rejection:', error);
 });
+
+console.log('✅ Bot started successfully!');

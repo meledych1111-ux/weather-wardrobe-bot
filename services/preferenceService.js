@@ -1,17 +1,19 @@
 const fs = require('fs').promises;
 const path = require('path');
 
+const PREFERENCES_FILE = path.join(__dirname, '../data/userPreferences.json');
+
 class PreferenceService {
   constructor() {
-    this.filePath = path.join(__dirname, '../data/userPreferences.json');
     this.preferences = {};
     this.loadPreferences();
   }
 
   async loadPreferences() {
     try {
-      const data = await fs.readFile(this.filePath, 'utf8');
+      const data = await fs.readFile(PREFERENCES_FILE, 'utf8');
       this.preferences = JSON.parse(data);
+      console.log('✅ User preferences loaded');
     } catch (error) {
       this.preferences = {};
       await this.savePreferences();
@@ -19,47 +21,60 @@ class PreferenceService {
   }
 
   async savePreferences() {
-    await fs.mkdir(path.dirname(this.filePath), { recursive: true });
-    await fs.writeFile(this.filePath, JSON.stringify(this.preferences, null, 2));
+    try {
+      await fs.mkdir(path.dirname(PREFERENCES_FILE), { recursive: true });
+      await fs.writeFile(PREFERENCES_FILE, JSON.stringify(this.preferences, null, 2));
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+    }
   }
 
   getUserPreferences(userId) {
-    return this.preferences[userId] || {
-      preferredCities: [],
-      clothingPreferences: [],
-      lastSearches: []
+    return this.preferences[userId] || { 
+      clothingPreferences: [], 
+      likedOutfits: [], 
+      location: null 
     };
   }
 
-  async addCityPreference(userId, city) {
-    const userPrefs = this.getUserPreferences(userId);
-    
-    if (!userPrefs.preferredCities.includes(city)) {
-      userPrefs.preferredCities.push(city);
-      if (userPrefs.preferredCities.length > 5) {
-        userPrefs.preferredCities.shift();
-      }
+  async saveUserPreference(userId, preference) {
+    if (!this.preferences[userId]) {
+      this.preferences[userId] = { 
+        clothingPreferences: [], 
+        likedOutfits: [], 
+        location: null 
+      };
     }
 
-    this.preferences[userId] = userPrefs;
+    if (preference.location) {
+      this.preferences[userId].location = preference.location;
+    }
+
+    if (preference.clothingPreference) {
+      this.preferences[userId].clothingPreferences.push({
+        ...preference.clothingPreference,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (preference.likedOutfit) {
+      this.preferences[userId].likedOutfits.push(preference.likedOutfit);
+    }
+
     await this.savePreferences();
   }
 
-  async addClothingPreference(userId, temperature, clothing) {
+  async getRecommendedOutfit(userId, weatherData) {
     const userPrefs = this.getUserPreferences(userId);
-    
-    userPrefs.clothingPreferences.push({
-      temperature,
-      clothing,
-      timestamp: new Date().toISOString()
-    });
+    const recentPrefs = userPrefs.clothingPreferences
+      .filter(pref => new Date(pref.timestamp) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+      .filter(pref => Math.abs(pref.temperature - weatherData.temperature) <= 5);
 
-    if (userPrefs.clothingPreferences.length > 20) {
-      userPrefs.clothingPreferences.shift();
+    if (recentPrefs.length > 0) {
+      return `⭐ Based on your preferences:\n${recentPrefs[0].outfit}`;
     }
 
-    this.preferences[userId] = userPrefs;
-    await this.savePreferences();
+    return weatherData.advice;
   }
 }
 
