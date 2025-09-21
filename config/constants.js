@@ -1,6 +1,6 @@
 module.exports = {
-  WEATHER_BASE_URL: 'https://api.openweathermap.org/data/2.5',
-  JOKE_API_URL: 'https://official-joke-api.appspot.com/random_joke',
+  WEATHERAPI_URL: 'https://api.weatherapi.com/v1/current.json',
+  SEVASTOPOL_LOCATION: 'Sevastopol',
   
   CLOTHING_ADVICE: {
     hot: '👕 Легкая одежда: футболка, шорты, панама, сандалии',

@@ -1,80 +1,116 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-const PREFERENCES_FILE = path.join(__dirname, '../data/userPreferences.json');
-
 class PreferenceService {
   constructor() {
-    this.preferences = {};
+    this.preferencesFile = path.join(__dirname, '../data/userPreferences.json');
+    this.userPreferences = new Map();
     this.loadPreferences();
   }
 
   async loadPreferences() {
     try {
-      const data = await fs.readFile(PREFERENCES_FILE, 'utf8');
-      this.preferences = JSON.parse(data);
+      const data = await fs.readFile(this.preferencesFile, 'utf8');
+      const preferences = JSON.parse(data);
+      
+      for (const [chatId, prefs] of Object.entries(preferences)) {
+        this.userPreferences.set(chatId, prefs);
+      }
+      
       console.log('✅ User preferences loaded');
     } catch (error) {
-      this.preferences = {};
-      await this.savePreferences();
+      console.log('ℹ️ No existing preferences file, starting fresh');
+      // Создаем пустой файл с правильной структурой
+      await this.saveAllPreferences();
     }
   }
 
-  async savePreferences() {
+  async saveAllPreferences() {
+    const data = Object.fromEntries(this.userPreferences);
     try {
-      await fs.mkdir(path.dirname(PREFERENCES_FILE), { recursive: true });
-      await fs.writeFile(PREFERENCES_FILE, JSON.stringify(this.preferences, null, 2));
+      await fs.mkdir(path.dirname(this.preferencesFile), { recursive: true });
+      await fs.writeFile(this.preferencesFile, JSON.stringify(data, null, 2));
     } catch (error) {
-      console.error('Error saving preferences:', error);
+      console.error('❌ Error saving preferences:', error);
     }
   }
 
-  getUserPreferences(userId) {
-    return this.preferences[userId] || { 
-      clothingPreferences: [], 
-      likedOutfits: [], 
-      location: null 
-    };
-  }
-
-  async saveUserPreference(userId, preference) {
-    if (!this.preferences[userId]) {
-      this.preferences[userId] = { 
-        clothingPreferences: [], 
-        likedOutfits: [], 
-        location: null 
+  getUserPreferences(chatId) {
+    if (!this.userPreferences.has(chatId)) {
+      return {
+        location: 'Sevastopol',
+        clothingPreferences: [],
+        likedOutfits: [],
+        dislikedOutfits: [],
+        lastUpdated: new Date().toISOString()
       };
     }
+    return this.userPreferences.get(chatId);
+  }
 
-    if (preference.location) {
-      this.preferences[userId].location = preference.location;
-    }
+  async saveUserPreference(chatId, preference) {
+    const currentPrefs = this.getUserPreferences(chatId);
+    
+    const updatedPrefs = {
+      ...currentPrefs,
+      ...preference,
+      lastUpdated: new Date().toISOString()
+    };
 
     if (preference.clothingPreference) {
-      this.preferences[userId].clothingPreferences.push({
-        ...preference.clothingPreference,
-        timestamp: new Date().toISOString()
-      });
+      updatedPrefs.clothingPreferences = [
+        ...currentPrefs.clothingPreferences,
+        {
+          ...preference.clothingPreference,
+          timestamp: new Date().toISOString()
+        }
+      ];
     }
 
     if (preference.likedOutfit) {
-      this.preferences[userId].likedOutfits.push(preference.likedOutfit);
+      updatedPrefs.likedOutfits = [
+        ...currentPrefs.likedOutfits,
+        {
+          outfit: preference.likedOutfit,
+          timestamp: new Date().toISOString()
+        }
+      ];
     }
 
-    await this.savePreferences();
+    this.userPreferences.set(chatId, updatedPrefs);
+    await this.saveAllPreferences();
+    
+    return updatedPrefs;
   }
 
-  async getRecommendedOutfit(userId, weatherData) {
-    const userPrefs = this.getUserPreferences(userId);
-    const recentPrefs = userPrefs.clothingPreferences
-      .filter(pref => new Date(pref.timestamp) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
-      .filter(pref => Math.abs(pref.temperature - weatherData.temperature) <= 5);
-
-    if (recentPrefs.length > 0) {
-      return `⭐ Based on your preferences:\n${recentPrefs[0].outfit}`;
+  async getRecommendedOutfit(chatId, weather) {
+    const userPrefs = this.getUserPreferences(chatId);
+    
+    // Если у пользователя есть понравившиеся outfit'ы, используем их
+    if (userPrefs.likedOutfits && userPrefs.likedOutfits.length > 0) {
+      const lastLikedOutfit = userPrefs.likedOutfits[userPrefs.likedOutfits.length - 1];
+      return `⭐ Based on your preferences:\n${lastLikedOutfit.outfit}`;
     }
 
-    return weatherData.advice;
+    // Иначе используем базовые рекомендации по температуре
+    const temp = weather.temperature;
+    
+    if (temp >= 30) return '👕 Легкая футболка, шорты, сандалии';
+    if (temp >= 20) return '👔 Футболка, джинсы и легкая куртка';
+    if (temp >= 10) return '🧥 Теплая кофта, джинсы и ветровка';
+    if (temp >= 0) return '🧤 Теплое пальто, шапка и шарф';
+    return '🧥❄️ Термобелье, пуховик, теплые ботинки';
+  }
+
+  // Новый метод для очистки старых записей
+  async cleanupOldPreferences(chatId, maxEntries = 50) {
+    const prefs = this.getUserPreferences(chatId);
+    
+    if (prefs.clothingPreferences.length > maxEntries) {
+      prefs.clothingPreferences = prefs.clothingPreferences.slice(-maxEntries);
+      this.userPreferences.set(chatId, prefs);
+      await this.saveAllPreferences();
+    }
   }
 }
 

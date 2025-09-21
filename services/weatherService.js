@@ -1,26 +1,42 @@
 const axios = require('axios');
-const { WEATHER_API_KEY, WEATHER_BASE_URL } = require('../config/constants');
-const { CLOTHING_ADVICE } = require('../config/constants');
+const { WEATHERAPI_URL, SEVASTOPOL_LOCATION, CLOTHING_ADVICE } = require('../config/constants');
+const { WEATHERAPI_KEY } = require('../config/keys');
 
 class WeatherService {
-  async getWeather(city) {
+  async getWeather() {
     try {
+      console.log('🌤️ Fetching weather for Sevastopol...');
+      
       const response = await axios.get(
-        `${WEATHER_BASE_URL}/weather?q=${city}&appid=${WEATHER_API_KEY}&units=metric&lang=ru`
+        `${WEATHERAPI_URL}?key=${WEATHERAPI_KEY}&q=Sevastopol&lang=ru`,
+        {
+          timeout: 10000,
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
       );
       
+      console.log('✅ Weather API response received');
+      
       const weather = response.data;
-      const advice = this.getClothingAdvice(weather.main.temp);
+      const temp = weather.current.temp_c;
+      const condition = weather.current.condition.text;
+      const advice = this.getClothingAdvice(temp);
       
       return {
-        temperature: Math.round(weather.main.temp),
-        description: weather.weather[0].description,
-        city: weather.name,
+        temperature: Math.round(temp),
+        description: condition,
+        city: weather.location.name,
         advice: advice
       };
     } catch (error) {
-      console.error('Weather API error:', error.response?.data);
-      throw new Error('Не удалось получить данные о погоде');
+      console.error('❌ WeatherAPI error:', error.message);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Status:', error.response.status);
+      }
+      throw new Error('Не удалось получить данные о погоде. Проверьте API ключ.');
     }
   }
 

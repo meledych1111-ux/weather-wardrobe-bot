@@ -7,24 +7,13 @@ services:
     restart: unless-stopped
     environment:
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-      - WEATHER_API_KEY=${WEATHER_API_KEY}
-      - RSS_FEED_URL=${RSS_FEED_URL}
+      - WEATHERAPI_KEY=${WEATHERAPI_KEY}
       - NODE_ENV=${NODE_ENV}
     volumes:
       - ./data:/app/data:rw
-      - ./logs:/app/logs:rw
     networks:
       - bot-network
-    healthcheck:
-      test: ["CMD", "node", "-e", "console.log('Health check OK')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 networks:
   bot-network:
     driver: bridge
-
-volumes:
-  data:
-  logs:

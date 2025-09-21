@@ -1,0 +1,98 @@
+{
+  "travel": [
+    {
+      "en": "Could you recommend some good local restaurants?",
+      "ru": "Не могли бы вы порекомендовать хорошие местные рестораны?",
+      "transcription": "[куд ю рэкомэнд сам гуд локэл рэсторантс?]",
+      "category": "travel"
+    },
+    {
+      "en": "How do I get to the city center?",
+      "ru": "Как добраться до центра города?",
+      "transcription": "[хау ду ай гет ту зэ сити сэнтэр?]",
+      "category": "travel"
+    },
+    {
+      "en": "I'd like to book a tour, please",
+      "ru": "Я хотел бы забронировать экскурсию, пожалуйста",
+      "transcription": "[айд лайк ту бук э тур, плиз]",
+      "category": "travel"
+    },
+    {
+      "en": "What's the best way to exchange currency?",
+      "ru": "Какой лучший способ обмена валюты?",
+      "transcription": "[вотс зэ бэст вэй ту эксчейндж кэрэнси?]",
+      "category": "travel"
+    },
+    {
+      "en": "Is there free Wi-Fi available here?",
+      "ru": "Здесь есть бесплатный Wi-Fi?",
+      "transcription": "[из зээр фри вай-фай эвейлэбл хиэр?]",
+      "category": "travel"
+    }
+  ],
+  "office": [
+    {
+      "en": "Could we schedule a meeting for next week?",
+      "ru": "Можем ли мы назначить встречу на следующую неделю?",
+      "transcription": "[куд ви скеджул э митинг фор нэкст вик?]",
+      "category": "office"
+    },
+    {
+      "en": "I need to submit the report by Friday",
+      "ru": "Мне нужно сдать отчет до пятницы",
+      "transcription": "[ай нид ту сабмит зэ рипорт бай фрайди]",
+      "category": "office"
+    },
+    {
+      "en": "Let's brainstorm some ideas for the project",
+      "ru": "Давайте проведем мозговой штурм для проекта",
+      "transcription": "[летс брейнсторм сам айдиас фор зэ проджект]",
+      "category": "office"
+    },
+    {
+      "en": "Could you send me the files by email?",
+      "ru": "Не могли бы вы прислать мне файлы по email?",
+      "transcription": "[куд ю сэнд ми зэ файлс бай имэйл?]",
+      "category": "office"
+    },
+    {
+      "en": "I'll follow up with you tomorrow",
+      "ru": "Я свяжусь с вами завтра",
+      "transcription": "[айл фоллоу ап виз ю туморроу]",
+      "category": "office"
+    }
+  ],
+  "business": [
+    {
+      "en": "We need to align our strategy with market trends",
+      "ru": "Нам нужно согласовать нашу стратегию с рыночными трендами",
+      "transcription": "[ви нид ту элайн аур стрэтеджи виз маркет трендс]",
+      "category": "business"
+    },
+    {
+      "en": "Let's touch base next week to discuss the details",
+      "ru": "Давайте созвонимся на следующей неделе для обсуждения деталей",
+      "transcription": "[летс тач бэйс нэкст вик ту дискАс зэ детэйлс]",
+      "category": "business"
+    },
+    {
+      "en": "We should leverage our core competencies",
+      "ru": "Нам следует использовать наши ключевые компетенции",
+      "transcription": "[ви шуд левередж аур кор компетенсиз]",
+      "category": "business"
+    },
+    {
+      "en": "Let's circle back to this later",
+      "ru": "Давайте вернемся к этому позже",
+      "transcription": "[летс серкл бэк ту зис лэйтэр]",
+      "category": "business"
+    },
+    {
+      "en": "We need to think outside the box",
+      "ru": "Нам нужно мыслить нестандартно",
+      "transcription": "[ви нид ту синк аутсайд зэ бокс]",
+      "category": "business"
+    }
+  ]
+}

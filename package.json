@@ -1,7 +1,7 @@
 {
   "name": "weather-wardrobe-bot",
   "version": "1.0.0",
-  "description": "Умный Telegram бот с погодой, английским и шутками",
+  "description": "Умный бот с погодой и английскими фразами",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
@@ -14,11 +14,10 @@
   "dependencies": {
     "node-telegram-bot-api": "^0.64.0",
     "axios": "^1.6.0",
-    "rss-parser": "^3.13.0",
     "node-cron": "^3.0.3",
     "dotenv": "^16.3.1"
   },
-  "keywords": ["telegram", "bot", "weather", "english", "jokes"],
+  "keywords": ["telegram", "bot", "weather", "english"],
   "author": "Your Name",
   "license": "MIT"
 }

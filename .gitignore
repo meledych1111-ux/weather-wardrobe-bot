@@ -1,27 +1,53 @@
+# Dependencies
 node_modules/
-.env
-.env.local
-data/*.json
-logs/*.log
-*.log
-npm-debug.log*
-.DS_Store
-.idea/
-.vscode/
-docker-compose.override.yml
-# Telegram API Keys - ОБЯЗАТЕЛЬНО!
-*keys*
-*key*
-*token*
-*api*
-config/*.json    # если ключи в папке config
-telegram*.json
-bot*.json
-# Файлы с реальными ключами (НЕ коммитить)
+
+# Environment variables
 .env
 .env.local
 .env.production
 *.env
+
+# Application data
+data/*.json
+logs/
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+
+# API Keys and sensitive data - ОБЯЗАТЕЛЬНО НЕ КОММИТИТЬ!
+*keys*
+*key*
+*token*
+*api*
+*secret*
+*password*
+*credential*
 
 # Файлы с ключами в любых папках
 config/keys.js
@@ -29,11 +55,9 @@ config/keys.json
 config/credentials.js
 */keys.*
 */credentials.*
+*/token.*
+*/api.*
 
 # Специфичные файлы для вашего проекта
 telegram-bot-token.*
-<<<<<<< HEAD
 weather-api-key.*
-=======
-weather-api-key.*
->>>>>>> 9c3d7a1c70b0f8550afc0c8ff0b8b87cafe3cc45

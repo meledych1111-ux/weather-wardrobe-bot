@@ -1,6 +1,5 @@
 const weatherService = require('../services/weatherService');
 const englishService = require('../services/englishService');
-const jokeService = require('../services/jokeService');
 const preferenceService = require('../services/preferenceService');
 
 class CommandHandler {
@@ -10,41 +9,35 @@ class CommandHandler {
   }
 
   setupCommands() {
-    this.bot.onText(/\/start/, (msg) => this.handleStart(msg));
-    this.bot.onText(/\/weather (.+)/, (msg, match) => this.handleWeather(msg, match));
-    this.bot.onText(/\/english/, (msg) => this.handleEnglish(msg));
-    this.bot.onText(/\/joke/, (msg) => this.handleJoke(msg));
+    // Основные команды (БЕЗ /start!)
+    this.bot.onText(/\/weather/, (msg) => this.handleWeather(msg));
+    this.bot.onText(/\/phrases/, (msg) => this.handlePhrases(msg));
     this.bot.onText(/\/preferences/, (msg) => this.handlePreferences(msg));
     this.bot.onText(/\/help/, (msg) => this.handleHelp(msg));
+
+    // Команды категорий
+    this.bot.onText(/\/travel/, (msg) => {
+      console.log('🎯 Command: /travel');
+      this.handleEnglishCategory(msg, 'travel');
+    });
+    
+    this.bot.onText(/\/office/, (msg) => {
+      console.log('🎯 Command: /office');
+      this.handleEnglishCategory(msg, 'office');
+    });
+    
+    this.bot.onText(/\/business/, (msg) => {
+      console.log('🎯 Command: /business');
+      this.handleEnglishCategory(msg, 'business');
+    });
   }
 
-  async handleStart(msg) {
+  async handleWeather(msg) {
     const chatId = msg.chat.id;
-    const welcomeMessage = `👋 Привет, ${msg.from.first_name}!
-
-Я твой умный помощник для:
-🌤️ Погоды и советов по одежде
-📚 Изучения английского
-😄 Развлечения с шутками
-
-Доступные команды:
-/weather [город] - Погода и советы
-/english - 5 английских фраз
-/joke - Случайная шутка
-/preferences - Мои предпочтения
-/help - Помощь
-
-Просто напиши мне название города для погоды!`;
-
-    await this.bot.sendMessage(chatId, welcomeMessage);
-  }
-
-  async handleWeather(msg, match) {
-    const chatId = msg.chat.id;
-    const city = match[1];
+    console.log('🌤️ /weather command received');
 
     try {
-      const weather = await weatherService.getWeather(city);
+      const weather = await weatherService.getWeather();
       const recommendation = await preferenceService.getRecommendedOutfit(chatId, weather);
 
       const message = `🌤️ Погода в ${weather.city}:
@@ -59,7 +52,7 @@ ${recommendation}
       await this.bot.sendMessage(chatId, message);
       
       await preferenceService.saveUserPreference(chatId, { 
-        location: city,
+        location: 'Севастополь',
         clothingPreference: {
           temperature: weather.temperature,
           outfit: recommendation,
@@ -68,31 +61,57 @@ ${recommendation}
       });
 
     } catch (error) {
-      await this.bot.sendMessage(chatId, '❌ Не удалось получить погоду. Проверь название города.');
+      console.error('❌ Weather error:', error.message);
+      await this.bot.sendMessage(chatId, '❌ Не удалось получить погоду. Проверьте API ключ WeatherAPI.');
     }
   }
 
-  async handleEnglish(msg) {
+  async handlePhrases(msg) {
     const chatId = msg.chat.id;
-    const phrases = englishService.getDailyPhrases();
+    console.log('📚 /phrases command received');
+    
+    const message = `🎯 Выберите категорию фраз:\n\n
+/travel - Путешествия ✈️
+/office - Офис 🏢  
+/business - Бизнес 💼
 
-    let message = '📚 5 английских фраз на сегодня:\n\n';
-    phrases.forEach((phrase, index) => {
-      message += `${index + 1}. **${phrase.word}**\n   - ${phrase.meaning}\n\n`;
-    });
+Или напишите:
+• "travel"
+• "office" 
+• "business"
 
-    await this.bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+📅 Фразы обновляются каждый день!`;
+
+    await this.bot.sendMessage(chatId, message);
   }
 
-  async handleJoke(msg) {
+  async handleEnglishCategory(msg, category) {
     const chatId = msg.chat.id;
-    const joke = await jokeService.getRandomJoke();
+    console.log(`🎯 English category command: ${category}`);
+    
+    const phrases = englishService.getDailyPhrases(category);
 
-    await this.bot.sendMessage(chatId, `😄 ${joke}`);
+    if (!phrases || phrases.length === 0) {
+      await this.bot.sendMessage(chatId, `❌ Фразы в категории "${category}" не найдены`);
+      return;
+    }
+
+    let message = `📚 Английские фразы (${category}) на сегодня:\n\n`;
+    phrases.forEach((phrase, index) => {
+      message += `${index + 1}. ${phrase.en}\n` +
+                 `   - ${phrase.ru}\n` +
+                 `   - ${phrase.transcription}\n\n`;
+    });
+
+    message += `📅 Завтра будут новые фразы!`;
+
+    await this.bot.sendMessage(chatId, message);
   }
 
   async handlePreferences(msg) {
     const chatId = msg.chat.id;
+    console.log('⭐ /preferences command received');
+    
     const prefs = preferenceService.getUserPreferences(chatId);
 
     let message = '⭐ Твои предпочтения:\n\n';
@@ -105,15 +124,22 @@ ${recommendation}
 
   async handleHelp(msg) {
     const chatId = msg.chat.id;
+    console.log('ℹ️ /help command received');
+    
     const helpMessage = `ℹ️ Доступные команды:
 
-/weather [город] - Узнать погоду и получить совет по одежде
-/english - Получить 5 английских фраз на сегодня
-/joke - Случайная шутка
-/preferences - Посмотреть свои предпочтения
-/help - Эта справка
+/weather - Погода в Севастополе и совет по одежде
+/phrases - Выбор категории английских фраз  
+/preferences - Мои предпочтения
+/help - Справка
 
-Просто напиши название города для быстрого доступа к погоде!`;
+Текстовые команды:
+• "погода" - быстрый доступ к погоде
+• "travel" - фразы для путешествий
+• "office" - офисные фразы
+• "business" - бизнес фразы
+
+📅 Фразы обновляются каждый день!`;
 
     await this.bot.sendMessage(chatId, helpMessage);
   }

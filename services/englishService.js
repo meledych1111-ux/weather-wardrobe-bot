@@ -1,50 +1,107 @@
-const Parser = require('rss-parser');
-const parser = new Parser();
-const { RSS_FEED_URL } = require('../config/keys');
+const fs = require('fs').promises;
+const path = require('path');
+
+const PHRASES_FILE = path.join(__dirname, '../data/phrases/english-phrases.json');
 
 class EnglishService {
   constructor() {
-    this.phrases = [];
-    this.lastUpdate = null;
-    this.loadDailyPhrases();
+    this.phrases = {};
+    this.loadPhrases();
   }
 
-  async loadDailyPhrases() {
+  async loadPhrases() {
     try {
-      const feed = await parser.parseURL(RSS_FEED_URL);
-      this.phrases = feed.items.slice(0, 5).map(item => ({
-        word: item.title,
-        meaning: item.contentSnippet || item.content
-      }));
-      this.lastUpdate = new Date();
+      console.log('📖 Loading English phrases from JSON...');
+      const data = await fs.readFile(PHRASES_FILE, 'utf8');
+      this.phrases = JSON.parse(data);
       console.log('✅ English phrases loaded successfully');
     } catch (error) {
-      console.error('Error loading phrases:', error);
+      console.error('❌ Error loading phrases from JSON:', error.message);
       this.phrases = this.getFallbackPhrases();
     }
   }
 
   getFallbackPhrases() {
-    return [
-      { word: "Serendipity", meaning: "The occurrence of events by chance in a happy or beneficial way" },
-      { word: "Ephemeral", meaning: "Lasting for a very short time" },
-      { word: "Quintessential", meaning: "Representing the most perfect or typical example of a quality or class" },
-      { word: "Melancholy", meaning: "A feeling of pensive sadness, typically with no obvious cause" },
-      { word: "Resilience", meaning: "The capacity to recover quickly from difficulties" }
-    ];
+    return {
+      travel: [
+        {
+          en: "Where is the nearest hotel?",
+          ru: "Где ближайший отель?",
+          transcription: "[вэр из зэ нээрист хоутел?]",
+          category: "travel"
+        }
+      ],
+      office: [
+        {
+          en: "I need to finish this report",
+          ru: "Мне нужно закончить этот отчет",
+          transcription: "[ай нид ту финиш зис рипорт]",
+          category: "office"
+        }
+      ],
+      business: [
+        {
+          en: "We need to align our strategy",
+          ru: "Нам нужно согласовать стратегию",
+          transcription: "[ви нид ту элайн аур стрэтеджи]",
+          category: "business"
+        }
+      ]
+    };
   }
 
-  getDailyPhrases() {
-    if (!this.phrases.length || this.isNewDay()) {
-      this.loadDailyPhrases();
+  getDailyPhrases(category = 'travel') {
+    // Берем день года для постоянства в течение дня
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+    
+    const allPhrases = this.phrases[category] || [];
+    
+    if (allPhrases.length === 0) {
+      return this.getFallbackPhrases()[category] || [];
     }
-    return this.phrases;
+
+    // Выбираем 5 фраз на основе дня года
+    const dailyPhrases = [];
+    const phrasesCount = Math.min(5, allPhrases.length);
+    
+    for (let i = 0; i < phrasesCount; i++) {
+      const index = (dayOfYear + i) % allPhrases.length;
+      dailyPhrases.push(allPhrases[index]);
+    }
+    
+    console.log(`📅 Daily phrases for ${category}: ${dailyPhrases.length} phrases`);
+    return dailyPhrases;
   }
 
-  isNewDay() {
-    if (!this.lastUpdate) return true;
-    const now = new Date();
-    return now.toDateString() !== this.lastUpdate.toDateString();
+  getAllPhrases(category = 'travel') {
+    return this.phrases[category] || this.getFallbackPhrases()[category] || [];
+  }
+
+  getAvailableCategories() {
+    const categories = Object.keys(this.phrases);
+    return categories.length > 0 ? categories : ['travel', 'office', 'business'];
+  }
+
+  async addPhrase(category, phraseData) {
+    if (!this.phrases[category]) {
+      this.phrases[category] = [];
+    }
+    
+    this.phrases[category].push({
+      ...phraseData,
+      category: category
+    });
+
+    await this.savePhrases();
+  }
+
+  async savePhrases() {
+    try {
+      await fs.writeFile(PHRASES_FILE, JSON.stringify(this.phrases, null, 2));
+      console.log('✅ Phrases saved to JSON file');
+    } catch (error) {
+      console.error('❌ Error saving phrases:', error);
+    }
   }
 }
 
